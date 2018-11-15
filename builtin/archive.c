@@ -10,6 +10,7 @@
 #include "pkt-line.h"
 #include "protocol.h"
 #include "sideband.h"
+#include "config.h"
 
 static void create_output_file(const char *output_file)
 {
@@ -96,6 +97,7 @@ int cmd_archive(int argc, const char **argv, const char *prefix)
 		OPT_END()
 	};
 
+	git_config(git_default_config, NULL);
 	register_allowed_protocol_version(protocol_v0);
 
 	argc = parse_options(argc, argv, prefix, local_opts, NULL,
