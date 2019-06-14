@@ -582,6 +582,8 @@ static void render_hunk(struct add_p_state *s, struct hunk *hunk,
 		 */
 		const char *p;
 		size_t len;
+		unsigned long old_offset = header->old_offset;
+		unsigned long new_offset = header->new_offset;
 
 		if (!colored) {
 			p = s->plain.buf + header->extra_start;
@@ -593,10 +595,14 @@ static void render_hunk(struct add_p_state *s, struct hunk *hunk,
 				- header->colored_extra_start;
 		}
 
+		if (s->mode->is_reverse)
+			old_offset -= delta;
+		else
+			new_offset += delta;
+
 		strbuf_addf(out, "@@ -%lu,%lu +%lu,%lu @@",
-			    header->old_offset, header->old_count,
-			    (unsigned long)(header->new_offset + delta),
-			    header->new_count);
+			    old_offset, header->old_count,
+			    new_offset, header->new_count);
 		if (len)
 			strbuf_add(out, p, len);
 		else if (colored)
