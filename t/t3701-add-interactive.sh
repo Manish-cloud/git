@@ -774,6 +774,7 @@ test_expect_success EXPENSIVE 'add -i with a lot of files' '
 '
 
 test_expect_success 'show help from add--helper' '
+	SP=" " &&
 	git reset --hard &&
 	cat >expect <<-EOF &&
 
