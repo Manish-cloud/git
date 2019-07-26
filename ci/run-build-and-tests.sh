@@ -27,8 +27,8 @@ linux-gcc)
 	make test
 
 	t/trace_schema_validator/trace_schema_validator \
-		--trace2_event_file=${GIT_TRACE2_EVENT} \
-		--schema_file=t/trace_schema_validator/strict_schema.json \
+		--trace2-event-file=${GIT_TRACE2_EVENT} \
+		--schema-file=t/trace_schema_validator/strict_schema.json \
 		--progress=10000
 	;;
 linux-gcc-4.8)
