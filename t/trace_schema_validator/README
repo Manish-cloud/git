@@ -1,0 +1,22 @@
+These JSON schemas[1] can be used to validate trace2 event objects. They
+can be used to add regression tests to verify that the event output
+format does not change unexpectedly.
+
+Four versions of the schema are provided:
+* event_schema.json is more permissive. It verifies that all expected
+  fields are present in a trace event, but it allows traces to have
+  unexpected additional fields. This allows the schema to be specified
+  more concisely by factoring out the common fields into a reusable
+  sub-schema.
+* strict_schema.json is more restrictive. It verifies that all expected
+  fields are present and no unexpected fields are present in the trace
+  event. Due to this additional restriction, the common fields cannot be
+  factored out into a re-usable subschema (at least as-of draft-07) [2],
+  and must be repeated for each event definition.
+* list_schema.json is like event_schema.json above, but validates a JSON
+  array of trace events, rather than a single event.
+* strict_list_schema.json is like strict_schema.json above, but
+  validates a JSON array of trace events, rather than a single event.
+
+[1]: https://json-schema.org/
+[2]: https://json-schema.org/understanding-json-schema/reference/combining.html#allof

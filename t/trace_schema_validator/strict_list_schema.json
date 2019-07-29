@@ -1,0 +1,514 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "http://git-scm.com/schemas/event_schema.json",
+	"title": "trace2 strict schema",
+	"description": "Strict schema for trace2 event output that verifies there are no unexpected fields.",
+
+	"definitions": {
+		"version_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "version" },
+				"evt": { "const": "1" },
+				"exe": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "evt", "exe" ],
+			"additionalProperties": false
+		},
+
+		"start_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "start" },
+				"t_abs": { "type": "number" },
+				"argv": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			},
+			"required": [ "sid", "thread", "time", "event", "t_abs", "argv" ],
+			"additionalProperties": false
+		},
+
+		"exit_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "exit" },
+				"t_abs": { "type": "number" },
+				"code": { "type": "integer" }
+			},
+			"required": [ "sid", "thread", "event", "t_abs", "code" ],
+			"additionalProperties": false
+		},
+
+		"atexit_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "atexit" },
+				"t_abs": { "type": "number" },
+				"code": { "type": "integer" }
+			},
+			"required": [ "sid", "thread", "time", "event", "t_abs", "code" ],
+			"additionalProperties": false
+		},
+
+		"signal_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "signal" },
+				"t_abs": { "type": "number" },
+				"signo": { "type": "integer" }
+			},
+			"required": [ "sid", "thread", "event", "t_abs", "signo" ],
+			"additionalProperties": false
+		},
+
+		"error_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "error" },
+				"msg": { "type": "string" },
+				"fmt": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "msg", "fmt" ],
+			"additionalProperties": false
+		},
+
+		"cmd_path_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "cmd_path" },
+				"path": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "path" ],
+			"additionalProperties": false
+		},
+
+		"cmd_name_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "cmd_name" },
+				"name": { "type": "string" },
+				"hierarchy": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "name", "hierarchy"
+			],
+			"additionalProperties": false
+		},
+
+		"cmd_mode_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "cmd_mode" },
+				"name": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "name" ],
+			"additionalProperties": false
+		},
+
+		"alias_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "alias" },
+				"alias": { "type": "string" },
+				"argv": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			},
+			"required": [ "sid", "thread", "event", "alias", "argv" ],
+			"additionalProperties": false
+		},
+
+		"child_start_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "child_start" },
+				"child_id": { "type": "integer" },
+				"child_class": { "type": "string" },
+				"use_shell": { "type": "boolean" },
+				"argv": {
+					"type": "array",
+					"items": { "type": "string" }
+				},
+				"hook_name": { "type": "string" },
+				"cd": { "type": "string" }
+			},
+			"required": [
+				"sid", "thread", "event", "child_id", "child_class",
+				"use_shell", "argv"
+			],
+			"additionalProperties": false
+		},
+
+		"child_exit_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "child_exit" },
+				"child_id": { "type": "integer" },
+				"pid": { "type": "integer" },
+				"code": { "type": "integer" },
+				"t_rel": { "type": "number" }
+			},
+			"required": [
+				"sid", "thread", "event", "child_id", "pid", "code", "t_rel"
+			],
+			"additionalProperties": false
+		},
+
+		"exec_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "exec" },
+				"exec_id": { "type": "integer" },
+				"exe": { "type": "string" },
+				"argv": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			},
+			"required": [ "sid", "thread", "event", "exec_id", "exe", "argv" ],
+			"additionalProperties": false
+		},
+
+		"exec_result_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "exec_result" },
+				"exec_id": { "type": "integer" },
+				"code": { "type": "integer" }
+			},
+			"required": [ "sid", "thread", "event", "exec_id", "code" ],
+			"additionalProperties": false
+		},
+
+		"thread_start_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "thread_start" }
+			},
+			"required": [ "sid", "thread", "event" ],
+			"additionalProperties": false
+		},
+
+		"thread_exit_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "thread_exit" },
+				"t_rel": { "type": "number" }
+			},
+			"required": [ "sid", "thread", "event", "t_rel" ],
+			"additionalProperties": false
+		},
+
+		"def_param_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "def_param" },
+				"param": { "type": "string" },
+				"value": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "param", "value" ],
+			"additionalProperties": false
+		},
+
+		"def_repo_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "def_repo" },
+				"worktree": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "repo", "worktree" ],
+			"additionalProperties": false
+		},
+
+		"region_enter_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "region_enter" },
+				"nesting": { "type": "integer" },
+				"category": { "type": "string" },
+				"label": { "type": "string" },
+				"msg": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "nesting" ],
+			"additionalProperties": false
+		},
+
+		"region_leave_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "region_leave" },
+				"t_rel": { "type": "number" },
+				"nesting": { "type": "integer" },
+				"category": { "type": "string" },
+				"label": { "type": "string" },
+				"msg": { "type": "string" }
+			},
+			"required": [ "sid", "thread", "event", "t_rel", "nesting" ],
+			"additionalProperties": false
+		},
+
+		"data_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "data" },
+				"t_abs": { "type": "number" },
+				"t_rel": { "type": "number" },
+				"nesting": { "type": "integer" },
+				"category": { "type": "string" },
+				"key": { "type": "string" },
+				"value": { "type": "string" }
+			},
+			"required": [
+				"sid", "thread", "event", "t_abs", "t_rel", "nesting",
+				"category","key", "value"
+			],
+			"additionalProperties": false
+		},
+
+		"data-json_event": {
+			"type": "object",
+			"properties": {
+				"sid": { "type": "string" },
+				"thread": { "type": "string" },
+				"time": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"file": { "type": "string" },
+				"line": { "type": "integer" },
+				"repo": { "type": "integer" },
+				"event": { "const": "data-json" },
+				"t_abs": { "type": "number" },
+				"t_rel": { "type": "number" },
+				"nesting": { "type": "integer" },
+				"category": { "type": "string" },
+				"key": { "type": "string" },
+				"value": { "type": "object" }
+			},
+			"required": [
+				"sid", "thread", "event", "t_abs", "t_rel", "nesting",
+				"category", "key", "value"
+			],
+			"additionalProperties": false
+		}
+	},
+
+	"type": "array",
+	"items": {
+		"oneOf": [
+			{ "$ref": "#/definitions/version_event" },
+			{ "$ref": "#/definitions/start_event" },
+			{ "$ref": "#/definitions/exit_event" },
+			{ "$ref": "#/definitions/atexit_event" },
+			{ "$ref": "#/definitions/signal_event" },
+			{ "$ref": "#/definitions/error_event" },
+			{ "$ref": "#/definitions/cmd_path_event" },
+			{ "$ref": "#/definitions/cmd_name_event" },
+			{ "$ref": "#/definitions/cmd_mode_event" },
+			{ "$ref": "#/definitions/alias_event" },
+			{ "$ref": "#/definitions/child_start_event" },
+			{ "$ref": "#/definitions/child_exit_event" },
+			{ "$ref": "#/definitions/exec_event" },
+			{ "$ref": "#/definitions/exec_result_event" },
+			{ "$ref": "#/definitions/thread_start_event" },
+			{ "$ref": "#/definitions/thread_exit_event" },
+			{ "$ref": "#/definitions/def_param_event" },
+			{ "$ref": "#/definitions/def_repo_event" },
+			{ "$ref": "#/definitions/region_enter_event" },
+			{ "$ref": "#/definitions/region_leave_event" },
+			{ "$ref": "#/definitions/data_event" },
+			{ "$ref": "#/definitions/data-json_event" }
+		]
+	}
+}
