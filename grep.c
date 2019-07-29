@@ -394,15 +394,6 @@ static void compile_pcre1_regexp(struct grep_pat *p, const struct grep_opt *opt)
 
 #ifdef GIT_PCRE1_USE_JIT
 	pcre_config(PCRE_CONFIG_JIT, &p->pcre1_jit_on);
-	if (p->pcre1_jit_on == 1) {
-		p->pcre1_jit_stack = pcre_jit_stack_alloc(1, 1024 * 1024);
-		if (!p->pcre1_jit_stack)
-			die("Couldn't allocate PCRE JIT stack");
-		pcre_assign_jit_stack(p->pcre1_extra_info, NULL, p->pcre1_jit_stack);
-	} else if (p->pcre1_jit_on != 0) {
-		BUG("The pcre1_jit_on variable should be 0 or 1, not %d",
-		    p->pcre1_jit_on);
-	}
 #endif
 }
 
@@ -414,18 +405,9 @@ static int pcre1match(struct grep_pat *p, const char *line, const char *eol,
 	if (eflags & REG_NOTBOL)
 		flags |= PCRE_NOTBOL;
 
-#ifdef GIT_PCRE1_USE_JIT
-	if (p->pcre1_jit_on) {
-		ret = pcre_jit_exec(p->pcre1_regexp, p->pcre1_extra_info, line,
-				    eol - line, 0, flags, ovector,
-				    ARRAY_SIZE(ovector), p->pcre1_jit_stack);
-	} else
-#endif
-	{
-		ret = pcre_exec(p->pcre1_regexp, p->pcre1_extra_info, line,
-				eol - line, 0, flags, ovector,
-				ARRAY_SIZE(ovector));
-	}
+	ret = pcre_exec(p->pcre1_regexp, p->pcre1_extra_info, line,
+			eol - line, 0, flags, ovector,
+			ARRAY_SIZE(ovector));
 
 	if (ret < 0 && ret != PCRE_ERROR_NOMATCH)
 		die("pcre_exec failed with error code %d", ret);
@@ -442,14 +424,11 @@ static void free_pcre1_regexp(struct grep_pat *p)
 {
 	pcre_free(p->pcre1_regexp);
 #ifdef GIT_PCRE1_USE_JIT
-	if (p->pcre1_jit_on) {
+	if (p->pcre1_jit_on)
 		pcre_free_study(p->pcre1_extra_info);
-		pcre_jit_stack_free(p->pcre1_jit_stack);
-	} else
+	else
 #endif
-	{
 		pcre_free(p->pcre1_extra_info);
-	}
 	pcre_free((void *)p->pcre1_tables);
 }
 #else /* !USE_LIBPCRE1 */
@@ -493,7 +472,8 @@ static void compile_pcre2_pattern(struct grep_pat *p, const struct grep_opt *opt
 		}
 		options |= PCRE2_CASELESS;
 	}
-	if (!opt->ignore_locale && is_utf8_locale() && has_non_ascii(p->pattern))
+	if (!opt->ignore_locale && is_utf8_locale() && has_non_ascii(p->pattern) &&
+	    !(!opt->ignore_case && (p->fixed || p->is_fixed)))
 		options |= PCRE2_UTF;
 
 	p->pcre2_pattern = pcre2_compile((PCRE2_SPTR)p->pattern,
@@ -510,7 +490,7 @@ static void compile_pcre2_pattern(struct grep_pat *p, const struct grep_opt *opt
 	}
 
 	pcre2_config(PCRE2_CONFIG_JIT, &p->pcre2_jit_on);
-	if (p->pcre2_jit_on == 1) {
+	if (p->pcre2_jit_on) {
 		jitret = pcre2_jit_compile(p->pcre2_pattern, PCRE2_JIT_COMPLETE);
 		if (jitret)
 			die("Couldn't JIT the PCRE2 pattern '%s', got '%d'\n", p->pattern, jitret);
@@ -537,17 +517,6 @@ static void compile_pcre2_pattern(struct grep_pat *p, const struct grep_opt *opt
 			p->pcre2_jit_on = 0;
 			return;
 		}
-
-		p->pcre2_jit_stack = pcre2_jit_stack_create(1, 1024 * 1024, NULL);
-		if (!p->pcre2_jit_stack)
-			die("Couldn't allocate PCRE2 JIT stack");
-		p->pcre2_match_context = pcre2_match_context_create(NULL);
-		if (!p->pcre2_match_context)
-			die("Couldn't allocate PCRE2 match context");
-		pcre2_jit_stack_assign(p->pcre2_match_context, NULL, p->pcre2_jit_stack);
-	} else if (p->pcre2_jit_on != 0) {
-		BUG("The pcre2_jit_on variable should be 0 or 1, not %d",
-		    p->pcre2_jit_on);
 	}
 }
 
@@ -591,8 +560,6 @@ static void free_pcre2_pattern(struct grep_pat *p)
 	pcre2_compile_context_free(p->pcre2_compile_context);
 	pcre2_code_free(p->pcre2_pattern);
 	pcre2_match_data_free(p->pcre2_match_data);
-	pcre2_jit_stack_free(p->pcre2_jit_stack);
-	pcre2_match_context_free(p->pcre2_match_context);
 }
 #else /* !USE_LIBPCRE2 */
 static void compile_pcre2_pattern(struct grep_pat *p, const struct grep_opt *opt)
@@ -640,7 +607,6 @@ static void compile_regexp(struct grep_pat *p, struct grep_opt *opt)
 {
 	int err;
 	int regflags = REG_NEWLINE;
-	int pat_is_fixed;
 
 	p->word_regexp = opt->word_regexp;
 	p->ignore_case = opt->ignore_case;
@@ -649,11 +615,21 @@ static void compile_regexp(struct grep_pat *p, struct grep_opt *opt)
 	if (memchr(p->pattern, 0, p->patternlen) && !opt->pcre2)
 		die(_("given pattern contains NULL byte (via -f <file>). This is only supported with -P under PCRE v2"));
 
-	pat_is_fixed = is_fixed(p->pattern, p->patternlen);
-	if (opt->fixed || pat_is_fixed) {
+	p->is_fixed = is_fixed(p->pattern, p->patternlen);
+#ifdef USE_LIBPCRE2
+       if (!p->fixed && !p->is_fixed) {
+	       const char *no_jit = "(*NO_JIT)";
+	       const int no_jit_len = strlen(no_jit);
+	       if (starts_with(p->pattern, no_jit) &&
+		   is_fixed(p->pattern + no_jit_len,
+			    p->patternlen - no_jit_len))
+		       p->is_fixed = 1;
+       }
+#endif
+	if (p->fixed || p->is_fixed) {
 #ifdef USE_LIBPCRE2
 		opt->pcre2 = 1;
-		if (pat_is_fixed) {
+		if (p->is_fixed) {
 			compile_pcre2_pattern(p, opt);
 		} else {
 			/*
