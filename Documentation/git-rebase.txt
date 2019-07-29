@@ -573,8 +573,6 @@ In addition, the following pairs of options are incompatible:
  * --preserve-merges and --signoff
  * --preserve-merges and --rebase-merges
  * --rebase-merges and --ignore-whitespace
- * --rebase-merges and --strategy
- * --rebase-merges and --strategy-option
  * --keep-base and --onto
  * --keep-base and --root
 
